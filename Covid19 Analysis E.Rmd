@@ -1,0 +1,529 @@
+---
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+# ANALYZING THE IMPACT OF COVID 19 USING THE COVID 19 PACKAGE IN R
+
+
+
+# INTRODUCTION
+
+This report analyzes the impact of COVID-19 using the COVID19 package in R. The objective is to explore temporal trends, identify peak periods, and compare patterns in confirmed cases and deaths to better understand how the pandemic evolved over time.
+
+## Data Source and Tools
+
+- **Data Source:** COVID19 R package  
+- **Variables:** Confirmed cases, deaths  
+- **Tools:** RStudio, R Markdown, ggplot2, dplyr
+
+# LOADING LIBRARY
+
+
+```{r}
+library(COVID19)
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+"COVID19" %in% installed.packages()[, "Package"]
+"tidyverse" %in% installed.packages()[, "Package"]
+"lubridate" %in% installed.packages()[, "Package"]
+```
+
+
+## Data Overview
+
+An initial inspection of the dataset was performed to understand its structure
+and key variables.
+
+
+
+
+```{r}
+covid_global <- covid19()
+
+head(covid_global)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+### Italy-specific data
+
+
+
+```{r}
+covid_italy <- covid19(country = "Italy")
+
+head(covid_italy)
+```
+
+
+
+
+
+
+
+### Region_level data for italy
+
+
+```{r}
+covid_italy_regions <- covid19(country = "Italy", level = 2)
+
+head(covid_italy_regions)
+```
+
+
+
+
+
+
+
+
+## Data Cleaning and Pre-processing
+
+This section describes the steps taken to prepare the COVID-19 dataset for analysis. Data cleaning is essential to ensure accuracy, consistency, and reliability of the results.
+
+### Convert date column
+
+The date variable was converted to Date format to enable proper time-series analysis and chronological plotting.
+```{r}
+covid_italy <- covid_italy %>%
+  mutate(date = as.Date(date))
+```
+
+
+
+## Handle missing values
+
+Missing values in key variables were addressed to avoid computational errors and biased results. Any missing observations in confirmed cases, deaths, and recoveries were replaced with zero.
+
+
+```{r}
+covid_italy <- covid_italy %>%
+  replace_na(list(
+    confirmed = 0,
+    deaths = 0,
+    recovered = 0
+  ))
+```
+
+
+
+
+
+
+## Check Structure
+
+The structure and summary statistics of the cleaned dataset were examined to verify that variables were correctly formatted and values were within expected ranges.
+
+
+```{r}
+str(covid_italy)
+summary(covid_italy)
+```
+
+
+
+
+# DESCRIPTIVE STATISTICS
+
+## Summary statistics for italy
+Summary of Pre-processing Steps
+
+✔ Date variables formatted correctly
+
+✔ Missing values handled consistently
+
+✔ Dataset structure validated
+
+Outcome: The dataset is now clean, reliable, and suitable for descriptive, temporal, and comparative COVID-19 analyses.
+```{r}
+summary(covid_italy %>% 
+          select(where(is.numeric)))
+
+```
+
+
+
+
+## Total cases,deaths, recoveries
+This section summarizes the overall impact of COVID-19 in Italy by calculating the cumulative totals of confirmed cases, deaths, and recoveries.
+```{r}
+covid_italy %>%
+  summarise(
+    total_cases = max(confirmed),
+    total_deaths = max(deaths),
+    total_recovered = max(recovered)
+  )
+```
+
+
+
+# Temporal trends(Time-Series Analysis)
+
+
+## Daily confirmed cases over time(italy)
+
+This time-series plot illustrates how confirmed COVID-19 cases in Italy evolved over time.
+
+```{r}
+print(ggplot(covid_italy, aes(x = date, y = confirmed)) +
+  geom_line(color = "blue",linewidth = 1.5) +
+  labs(
+    title = "COVID-19 Confirmed Cases in Italy Over Time",
+    x = "Date",
+    y = "Confirmed Cases"
+  ) +
+  theme_minimal())
+```
+## REPORT ON COVID-19 CONFIRMED CASES
+
+The curve shows a continuous upward trajectory, reflecting the cumulative nature of confirmed cases.
+
+An initial slow increase is observed in early 2020, corresponding to the early phase of the pandemic.
+
+A sharp and steep rise occurs around late 2021 to early 2022, indicating a period of intense transmission.
+
+Following this surge, the curve begins to flatten, suggesting a reduction in the rate of new infections.
+
+From 2023 onwards, the growth becomes more gradual, indicating improved control of the pandemic.
+
+# COMPARATIVE ANALYSIS
+
+Country-Level Comparison: Italy vs France
+
+This section compares confirmed COVID-19 cases between Italy and France to assess differences in pandemic progression.
+
+```{r}
+library(dplyr)
+
+covid_compare <- covid_global %>%
+  filter(
+    administrative_area_level_1 %in% c("Italy", "France")
+  )
+```
+
+
+```{r}
+covid_compare$date <- as.Date(covid_compare$date)
+```
+
+
+
+
+```{r fig.width=8, fig.height=5}
+ggplot(
+  covid_compare,
+  aes(
+    x = as.Date(date),
+    y = confirmed,
+    color = administrative_area_level_1
+  )
+) +
+  geom_line(linewidth =1.5 ) +
+  labs(
+    title = "COVID-19 Confirmed Cases: Italy vs France",
+    x = "Date",
+    y = "Confirmed Cases",
+    color = "Country",
+    
+  ) +
+  theme_minimal()
+```
+## REPORT ON COVID 19 CONFIRMED CASES ITALY VS FRANCE
+Both Italy and France exhibit a steady increase in confirmed cases over time, consistent with cumulative reporting.
+
+An initial slow growth phase is observed during early 2020.
+
+A sharp rise in cases occurs around late 2021 to early 2022 in both countries, indicating major pandemic waves.
+
+France shows a steeper increase during this period, reaching a higher cumulative total than Italy.
+
+After 2022, both curves begin to flatten, suggesting a reduction in the rate of new infections.
+
+
+## Interpretation
+Both countries exhibit similar temporal patterns, including multiple waves of infection. However, differences in peak magnitudes and timing suggest variations in national responses, population dynamics, and health system capacities.
+
+
+```{r}
+unique(covid_compare$administrative_area_level_1)
+```
+
+
+
+```{r}
+#covid_global <- covid19()
+#unique(covid_global$administrative_area_level_1)
+```
+
+## Comparing REGIONS IN ITALY
+
+Inspecting the dataset and listing unique regions ensures that regional-level data are correctly structured and available for comparison.
+```{r}
+head(covid_italy_regions)
+```
+
+
+
+
+
+
+
+
+
+
+### Which regions are available
+
+
+
+```{r}
+
+unique(covid_italy_regions$administrative_area_level_2)
+```
+```{r}
+selected_regions=c("Campania","Veneto")
+```
+
+
+
+### Filter data to those two regions
+
+```{r}
+covid_regions_compare=covid_italy_regions%>%
+  filter(administrative_area_level_2%in%selected_regions)%>%
+  mutate(date=as.Date(date))
+```
+
+
+
+### Line Plot(Region Comparison)
+
+
+
+```{r}
+
+ggplot(
+  covid_regions_compare,
+  aes(
+    x=date,
+    y=confirmed,
+    color=administrative_area_level_2
+  ))+
+  geom_line()+
+      labs(
+        title = "COVID-19 Confirmed Cases: Campania Vs Veneto",
+        x="Date",
+        y="Confirmed Cases",
+        color="Region"
+      )+
+        theme_minimal()
+      
+```
+## REPORT ON COVID-19 CONFIRMED CASES CAMPANIA VS VENETO
+Both regions exhibit a steady cumulative increase in confirmed cases throughout the study period.
+
+An initial slow growth phase is visible during early 2020, followed by multiple waves of accelerated transmission.
+
+A pronounced surge around late 2021 to early 2022 is observed in both regions, corresponding to major pandemic waves.
+
+After this surge, the curves begin to flatten, indicating a slowdown in the rate of new infections.
+    
+
+# Confirmed cases vs recovery cases Germany
+
+
+```{r}
+covid_germany=covid19(country = "Germany")%>%
+  mutate(date=as.Date(date))
+```
+```{r}
+head(covid_germany)
+```
+
+
+
+```{r}
+sum(is.na(covid_germany$confirmed))
+nrow(covid_germany)
+```
+
+
+
+```{r}
+sum(is.na(covid_germany$deaths))
+```
+
+
+
+```{r}
+  ggplot(
+    covid_germany,
+    aes(date))+
+   geom_line(aes(y=deaths,color="Deaths"),linewidth = 1.5)+
+   geom_line(aes(y=recovered,color="Recovered"),linewidth = 1.2)+
+   labs(
+     title="COVID-19 Recovered vs Deaths cases in Germany",
+     x="Date",
+     y="Number of Cases",
+     color="Case Type"
+   )+
+  theme_minimal()
+      
+  
+
+  
+  
+```
+## REPORT ON COVID 19 RECOVERED VS DEATH CASES IN GERMANY
+The substantial gap between recovered and death cases indicates that the majority of infected individuals in Germany recovered from COVID-19. The rapid increase in recoveries during later periods suggests improvements in clinical treatment, vaccination coverage, and overall healthcare response. The relatively flat death curve reflects a lower fatality rate, especially in later stages of the pandemic.
+
+
+
+# Geographical Distribution
+
+
+
+
+```{r}
+library(dplyr)
+library(maps)
+library(ggplot2)
+```
+
+
+
+
+## Load COVID-19 Global Data
+```{r}
+head(covid_global)
+```
+
+
+
+
+
+
+## Total Confirmed cases per country
+
+```{r}
+library(dplyr)
+covid_summary <- covid_global %>%
+  group_by(administrative_area_level_1) %>%
+  summarise(
+    total_cases = ifelse(
+      all(is.na(confirmed)),
+      NA,
+      max(confirmed, na.rm = TRUE)
+    ),
+    .groups = "drop"
+  )%>%
+  rename(country=administrative_area_level_1)
+
+covid_summary
+
+```
+
+
+
+## Remove Areas with no data
+```{r}
+covid_summary <- covid_summary %>%
+  filter(!is.na(total_cases))
+```
+
+## Get World Map Data
+```{r}
+world <- map_data("world")
+head(world)
+
+```
+
+
+
+```{r}
+map_data <- left_join(
+  world,
+  covid_summary,
+  by = c("region" = "country")
+
+)
+```
+
+## Merge COVID DATA WITH MAP DATA
+
+```{r}
+map_data <- left_join(
+  world,
+  covid_summary,
+  by = c("region" = "country")
+)
+```
+
+## Geographical Distribution
+
+```{r}
+ggplot(map_data, aes(long, lat, group = group, fill = total_cases)) +
+  geom_polygon(color = "white", size = 0.1) +
+  scale_fill_viridis_c(
+    na.value = "grey",
+    trans = "log",
+    name = "Total Cases"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Global Distribution of COVID-19 Cases"
+  )
+```
+## REPORT ON GLOBAL DISTRIBUTION OF COVID 19 CASES
+Observed Patterns
+
+High case concentrations are observed in North America, Europe, South Asia, and parts of South America.
+
+Countries with large populations and extensive testing capacity show higher cumulative case counts.
+
+Several regions in Africa and smaller island nations display lower reported case numbers.
+
+The use of a logarithmic color scale enhances visibility across countries with very different case magnitudes.
+
+## INTERPRETATION
+The uneven color distribution highlights the global heterogeneity of the COVID-19 pandemic. Differences in reported cases may reflect not only transmission intensity but also population size, testing strategies, healthcare infrastructure, and reporting practices. Regions with lighter colors may not necessarily have lower transmission but could reflect underreporting or limited testing capacity.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
